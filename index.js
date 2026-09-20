@@ -9,7 +9,9 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://gentle-gaufre-e70747.netlify.app'
+}));
 app.use(express.json());
 
 const limiter = rateLimit({
@@ -21,7 +23,10 @@ const limiter = rateLimit({
 app.use('/generate-questions', limiter);
 app.use('/extract-text', limiter);
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
