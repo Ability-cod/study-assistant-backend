@@ -6,10 +6,20 @@ const multer = require('multer');
 const { PDFParse } = require('pdf-parse');
 const mammoth = require('mammoth');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 requests per hour per IP
+  message: { error: 'You have reached the request limit. Please try again in an hour.' }
+});
+
+app.use('/generate-questions', limiter);
+app.use('/extract-text', limiter);
 
 const upload = multer({ storage: multer.memoryStorage() });
 
