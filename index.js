@@ -55,7 +55,7 @@ async function generateWithRetry(prompt, retries = 3) {
 
 app.post('/generate-questions', async (req, res) => {
   try {
-    const { notes } = req.body;
+    const { notes, userId } = req.body;
 
     if (!notes) {
       return res.status(400).json({ error: 'Notes text is required' });
@@ -77,8 +77,8 @@ ${notes}`;
     const questions = JSON.parse(cleaned);
 
     const [noteResult] = await db.query(
-      'INSERT INTO notes (content) VALUES (?)',
-      [notes]
+      'INSERT INTO notes (content, user_id) VALUES (?, ?)',
+      [notes, userId || 'unknown']
     );
     const noteId = noteResult.insertId;
 
@@ -184,6 +184,38 @@ app.post('/extract-text', upload.single('file'), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to process file', details: err.message });
+  }
+});
+
+app.get('/history/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const [notes] = await db.query(
+      'SELECT id, content, created_at FROM notes WHERE user_id = ? ORDER BY created_at DESC',
+      [userId]
+    );
+
+    res.json({ notes });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong', details: err.message });
+  }
+});
+
+app.get('/history/:userId/:noteId', async (req, res) => {
+  try {
+    const { noteId } = req.params;
+
+    const [questions] = await db.query(
+      'SELECT id, question FROM questions WHERE note_id = ?',
+      [noteId]
+    );
+
+    res.json({ questions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong', details: err.message });
   }
 });
 
